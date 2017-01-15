@@ -3,4 +3,4 @@
 *.key
 *.pub
 config.php
-server/updates
+updates

@@ -5,6 +5,7 @@ function init() {
   if (!file_exists('config.php')) return 'Config file not found';
   if (file_exists(PRIKEY_FN) && file_exists(PUBKEY_FN)) return 0;
 
+  echo 'Generating key pair';
   $res = openssl_pkey_new([
     'digest_alg' => DIGEST_ALG,
     'private_key_bits' => RSA_KEY_SIZE,
@@ -19,6 +20,7 @@ function init() {
   $cert = openssl_csr_sign($csr, null, $res, 3650);
   openssl_x509_export($cert, $cert);
 
+  echo 'Exporting key pair';
   file_put_contents(PRIKEY_FN, $prikey);
   file_put_contents(PUBKEY_FN, $cert);
 

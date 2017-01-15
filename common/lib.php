@@ -37,17 +37,18 @@ class SecureMessage {
 
   function __construct($prikey_fn, $pubkey_fn, $pubkey_remote = NULL, $verify_algo = 'sha256WithRSAEncryption', $sign_algo = 'sha256') {
     $this->prikey = openssl_pkey_get_private(file_get_contents($prikey_fn));
-    echo openssl_error_string();
     $this->pubkey_str = file_get_contents($pubkey_fn);
     $this->pubkey = openssl_pkey_get_public($this->pubkey_str);
     $this->pubkey_remote = $pubkey_remote;
     if (!is_null($pubkey_remote)) $this->set_pubkey_remote($pubkey_remote);
     $this->sign_algo = $sign_algo;
     $this->verify_algo = $verify_algo;
+    while ($msg = openssl_error_string()) error_log($msg);
   }
 
   function read($payload) {
     $payload = json_decode($payload, 1);
+    if (isset($payload['result']) && $payload['result'] == 'failed') throw new Exception('Request failed. '.$payload['message']);
     if (!isset($payload['aeskey'])) throw new Exception('Missing AES secret');
     if (!isset($payload['signature'])) throw new Exception('Missing signature');
     if (is_null($this->pubkey_remote)) {
@@ -60,6 +61,8 @@ class SecureMessage {
 
     openssl_private_decrypt(base64_decode($payload['aeskey']), $aes_secret, $this->prikey);
     $AES = new AESHelper($aes_secret);
+    while ($msg = openssl_error_string()) error_log($msg);
+
     return $AES->decrypt(base64_decode($payload['package']));
   }
 
@@ -68,16 +71,19 @@ class SecureMessage {
     $AES = new AESHelper($aes_secret);
     openssl_public_encrypt($aes_secret, $aes_secret_crypted, $this->pubkey_remote);
 
-    openssl_sign($package, $signature, $this->prikey, $this->sign_algo);
+    $package_encrypted = $AES->encrypt($package);
+    openssl_sign($package_encrypted, $signature, $this->prikey, $this->sign_algo);
 
     $payload = [
-      'aeskey' => $aes_secret_crypted,
+      'aeskey' => base64_encode($aes_secret_crypted),
       'signature' => base64_encode($signature),
-      'package' => base64_encode($AES->encrypt($package))
+      'package' => base64_encode($package_encrypted)
     ];
 
     if ($include_local_pubkey) $payload['pubkey'] = $this->pubkey_str;
 
+    error_log(json_encode($payload));
+    while ($msg = openssl_error_string()) error_log($msg);
     return json_encode($payload);
   }
 
