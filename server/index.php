@@ -1,17 +1,23 @@
 <?php
 require_once 'config.php';
+require_once 'lib.php';
 header('Content-Type: application/json; charset=utf-8');
-if (!isset($_GET['func'])) {
-    exit(json_encode([
-        'result' => 'failed'
-    ]));
-}
 
-switch ($_GET['func']) {
+try {
+  if (!isset($_GET['func'])) {
+    throw new Exception('Missing parameter func');
+  }
+  switch ($_GET['func']) {
     case 'check':
-        require 'routes/check.php';
+      require 'routes/check.php';
     case 'fetch':
-        require 'routes/fetch.php';
+      require 'routes/fetch.php';
     case 'pubkey':
-        require 'routes/pubkey.php';
+      require 'routes/pubkey.php';
+  }
+} catch (Exception $e) {
+    exit(json_encode([
+        'result' => 'failed',
+        'message' => $e->getMessage()
+    ]));
 }
