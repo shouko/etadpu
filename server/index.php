@@ -1,6 +1,6 @@
 <?php
 require_once 'config.php';
-require_once 'lib.php';
+require_once '../common/lib.php';
 header('Content-Type: application/json; charset=utf-8');
 
 try {
