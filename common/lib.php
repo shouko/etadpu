@@ -8,7 +8,7 @@ class AESHelper {
  private $iv;
 
  function __construct($secret) {
-   if (is_null($secert)) return false;
+   if (is_null($secret)) return false;
    $hash = hash('SHA384', $secret, true);
    $this->key = substr($hash, 0, 32);
    $this->iv = substr($hash, 32, 16);
@@ -33,13 +33,17 @@ class SecureMessage {
   private $pubkey_str;
   private $pubkey_remote;
   private $sign_algo;
+  private $verify_algo;
 
-  function __construct($prikey_fn, $pubkey_fn, $keypass, $pubkey_remote = NULL, $sign_algo = 'sha256WithRSAEncryption') {
-    $this->prikey = openssl_pkey_get_private(file_get_contents($privkey_fn), $keypass);
+  function __construct($prikey_fn, $pubkey_fn, $pubkey_remote = NULL, $verify_algo = 'sha256WithRSAEncryption', $sign_algo = 'sha256') {
+    $this->prikey = openssl_pkey_get_private(file_get_contents($prikey_fn));
+    echo openssl_error_string();
     $this->pubkey_str = file_get_contents($pubkey_fn);
     $this->pubkey = openssl_pkey_get_public($this->pubkey_str);
     $this->pubkey_remote = $pubkey_remote;
+    if (!is_null($pubkey_remote)) $this->set_pubkey_remote($pubkey_remote);
     $this->sign_algo = $sign_algo;
+    $this->verify_algo = $verify_algo;
   }
 
   function read($payload) {
@@ -51,7 +55,7 @@ class SecureMessage {
       $this->set_pubkey_remote($payload['pubkey']);
     }
 
-    $verify = openssl_verify(base64_decode($payload['package']), base64_decode($payload['signature']), $this->pubkey_remote, $this->sign_algo);
+    $verify = openssl_verify(base64_decode($payload['package']), base64_decode($payload['signature']), $this->pubkey_remote, $this->verify_algo);
     if ($verify !== 1) throw new Exception('Signature mismatch');
 
     openssl_private_decrypt(base64_decode($payload['aeskey']), $aes_secret, $this->prikey);
