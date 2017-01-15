@@ -1,5 +1,6 @@
 *.pem
 *.crt
 *.key
+*.pub
 config.php
 server/updates
