@@ -15,9 +15,11 @@ function init() {
   openssl_pkey_export($res, $prikey);
 
   // get public key
-  $pubkey = openssl_pkey_get_details($res);
-  $pubkey = $pubkey['key'];
+  $csr = openssl_csr_new([], $res);
+  $cert = openssl_csr_sign($csr, null, $res, 3650);
+  openssl_x509_export($cert, $cert);
 
   file_put_contents(PRIKEY_FN, $prikey);
-  file_put_contents(PUBKEY_FN, $pubkey);
+  file_put_contents(PUBKEY_FN, $cert);
+
 }
