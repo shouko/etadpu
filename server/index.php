@@ -12,4 +12,6 @@ switch ($_GET['func']) {
         require 'routes/check.php';
     case 'fetch':
         require 'routes/fetch.php';
+    case 'pubkey':
+        require 'routes/pubkey.php';
 }
