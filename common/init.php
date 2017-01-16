@@ -25,3 +25,19 @@ function init() {
   file_put_contents(PUBKEY_FN, $cert);
 
 }
+
+function pka_reg() {
+  $opts = [
+    'http' => [
+      'method' => 'POST',
+      'header' => 'Content-type: application/x-www-form-urlencoded',
+      'content' => http_build_query([
+        'pubkey' => file_get_contents(PUBKEY_FN),
+        'type' => DEVICE_TYPE
+      ])
+    ]
+  ];
+
+  echo "Registering to PKA\n";
+  $response = file_get_contents(PKA_ENDPOINT.'reg', false, stream_context_create($opts));
+}

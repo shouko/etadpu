@@ -2,6 +2,7 @@
 require_once '../common/init.php';
 require_once '../common/lib.php';
 init();
+pka_reg();
 
 function finish($msg) {
   echo $msg."\n";
@@ -9,6 +10,44 @@ function finish($msg) {
 }
 
 try {
+  echo "Fetching PKA public key\n";
+  $pka_pubkey = json_decode(file_get_contents(PKA_ENDPOINT.'pubkey'), 1)['pubkey'];
+  $msg = new SecureMessage(PRIKEY_FN, PUBKEY_FN, $pka_pubkey);
+
+  echo "Fetching update server public key from PKA\n";
+  $opts = [
+    'http' => [
+      'method' => 'POST',
+      'header' => 'Content-type: application/x-www-form-urlencoded',
+      'content' => http_build_query([
+        'hash' => hash('sha256', file_get_contents(PUBKEY_FN)),
+        'type' => DEVICE_TYPE
+      ])
+    ]
+  ];
+  $response = file_get_contents(PKA_ENDPOINT.'get', false, stream_context_create($opts));
+  $server_pubkey_pka = $msg->read($response);
+
+  echo "Verifying update server\n";
+  $n = openssl_random_pseudo_bytes(50);
+  openssl_public_encrypt($n, $challenge_string, openssl_pkey_get_public($server_pubkey_pka));
+
+  $opts = [
+    'http' => [
+      'method' => 'POST',
+      'header' => 'Content-type: application/x-www-form-urlencoded',
+      'content' => http_build_query([
+        'payload' => base64_encode($challenge_string)
+      ])
+    ]
+  ];
+  $response = file_get_contents(SERVER_ENDPOINT.'challenge', false, stream_context_create($opts));
+  echo "Original: ".base64_encode($n)."\n";
+  echo "Response: ".json_decode($response, 1)['result']."\n";
+  if (base64_decode(json_decode($response, 1)['result']) !== $n) throw new Exception('Server challenge failed');
+
+  echo "Server challenge success\n";
+
   if (!file_exists(UPDATE_DIR)) mkdir(UPDATE_DIR);
 
   $files = [];

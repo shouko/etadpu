@@ -4,3 +4,4 @@
 *.pub
 config.php
 updates
+keystore.json

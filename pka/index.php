@@ -8,14 +8,12 @@ try {
     throw new Exception('Missing parameter func');
   }
   switch ($_GET['func']) {
-    case 'check':
-      require 'routes/check.php';
-    case 'fetch':
-      require 'routes/fetch.php';
+    case 'reg':
+      require 'routes/reg.php';
+    case 'get':
+      require 'routes/get.php';
     case 'pubkey':
       require 'routes/pubkey.php';
-    case 'challenge':
-      require 'routes/challenge.php';
   }
 } catch (Exception $e) {
     exit(json_encode([
